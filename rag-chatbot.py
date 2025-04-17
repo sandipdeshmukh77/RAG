@@ -6,6 +6,7 @@ from langchain_openai import OpenAIEmbeddings  # For creating text embeddings
 from langchain_qdrant import QdrantVectorStore  # For vector storage and retrieval
 from dotenv import load_dotenv  # For loading environment variables
 from openai import OpenAI  # For interacting with OpenAI API
+import os  
 
 # Load environment variables from .env file
 load_dotenv()
@@ -30,7 +31,7 @@ spit_docs = text_splitter.split_documents(documents = docs)
 # Initialize OpenAI embeddings with the specified model
 embeder = OpenAIEmbeddings(
     model="text-embedding-3-large",
-    api_key="api_key",)
+    api_key=os.getenv("OPENAI_API_KEY"))
 
 # The following code block is commented out as it's used for initial setup
 # It creates a new vector store and adds documents to it
@@ -59,9 +60,9 @@ query = input("Enter your question: ")
 relevant_chunks = retriver.similarity_search(query=query)
 
 # Define the system prompt for the chatbot
-system_prompt = """
+system_prompt = f"""
 You are a helpful assistant. you help the user to find the answer to their question based on the provided context.
-context: {context}
+context: {relevant_chunks}
 You will be provided with a context and a question. You need to answer the question based on the context.
 If the context does not provide enough information to answer the question, you should say "I don't know".
 """
