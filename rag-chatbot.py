@@ -7,6 +7,7 @@ from langchain_qdrant import QdrantVectorStore  # For vector storage and retriev
 from dotenv import load_dotenv  # For loading environment variables
 from openai import OpenAI  # For interacting with OpenAI API
 import os  
+from embedding_utils import initialize_embeddings, create_and_index_vector_store  # Custom utility for embedding initialization
 
 # Load environment variables from .env file
 load_dotenv()
@@ -29,21 +30,17 @@ text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=20
 spit_docs = text_splitter.split_documents(documents = docs)
 
 # Initialize OpenAI embeddings with the specified model
-embeder = OpenAIEmbeddings(
-    model="text-embedding-3-large",
-    api_key=os.getenv("OPENAI_API_KEY"))
+embeder = initialize_embeddings()
 
 # The following code block is commented out as it's used for initial setup
 # It creates a new vector store and adds documents to it
 #-------------------start----------------------
-# vector_store = QdrantVectorStore.from_documents(
-#     documents=[],
+# create_and_index_vector_store(
+#     documents=spit_docs,
 #     embedding=embeder,
 #     collection_name="test_rag",
-#     url="http://localhost:6333",
+#     url="http://localhost:6333"
 # )
-# vector_store.add_documents(documents=spit_docs)
-# print("indexing done")
 #------------------------end-------------------
 
 # Connect to existing Qdrant collection

@@ -21,4 +21,4 @@ def create_and_index_vector_store(documents, embedding, collection_name, url):
     )
     vector_store.add_documents(documents=documents)
     print("indexing done")
-    return vector_store
+    # return vector_store

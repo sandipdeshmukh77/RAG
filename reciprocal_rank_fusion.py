@@ -49,7 +49,7 @@ async def get_embedding_and_search(query: str):
         print(f"Search error for query '{query}': {e}")
         return []
 
-def identify_unique_chunks(results: List) -> List:
+def identify_unique_chunks_ranking(results: List) -> List:
     seen = set()
     unique_chunks = []
     
@@ -59,8 +59,9 @@ def identify_unique_chunks(results: List) -> List:
             if chunk.page_content not in seen:
                 seen.add(chunk.page_content)
                 unique_chunks.append(chunk) 
-    
-    return unique_chunks
+    unique_chunks.sort(key=lambda x: x.metadata.get('rank', 0), reverse=True)  # Sort by rank if available
+    # Return the top N unique chunks based on rank
+    return unique_chunks[:3]
 
 async def run_llm(query: str, context: List) -> str:
     try:
@@ -90,11 +91,11 @@ async def main_logic(original_query: str):
         results = await asyncio.gather(*tasks)
 
         # Identify unique response chunks
-        unique_chunks = identify_unique_chunks(results)
-        print(f"Found {len(unique_chunks)} unique chunks")
+        unique_chunks_ranking = identify_unique_chunks_ranking(results)
+      
 
         # Generate final response
-        llm_response = await run_llm(original_query, unique_chunks)
+        llm_response = await run_llm(original_query, unique_chunks_ranking)
         return llm_response
 
     except Exception as e:
