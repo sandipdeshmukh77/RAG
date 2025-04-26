@@ -48,19 +48,34 @@ async def get_embedding_and_search(query: str):
     except Exception as e:
         print(f"Search error for query '{query}': {e}")
         return []
+def reciprocal_rank_fusion(rankings, k=60):
+    scores = {}
+    for ranking in rankings:
+        for rank, doc_id in enumerate(ranking):
+            scores[doc_id] = scores.get(doc_id, 0) + 1 / (k + rank + 1)
+    return sorted(scores.items(), key=lambda x: x[1], reverse=True)
 
 def identify_unique_chunks_ranking(results: List) -> List:
-    seen = set()
-    unique_chunks = []
+    # Convert each result list to a list of page_content (as document IDs)
+    rankings = [[chunk.page_content for chunk in result] for result in results]
     
-    for chunk_list in results:
-        for chunk in chunk_list:
-            # Use the chunk's page_content as the unique identifier
-            if chunk.page_content not in seen:
-                seen.add(chunk.page_content)
-                unique_chunks.append(chunk) 
-    unique_chunks.sort(key=lambda x: x.metadata.get('rank', 0), reverse=True)  # Sort by rank if available
-    # Return the top N unique chunks based on rank
+    # Apply reciprocal rank fusion
+    fused_rankings = reciprocal_rank_fusion(rankings)
+
+    
+    # Create a mapping of page_content to chunks for easy lookup
+    chunk_map = {}
+    for result in results:
+        for chunk in result:
+            chunk_map[chunk.page_content] = chunk
+    
+    # Get the top chunks based on RRF scores
+    unique_chunks = []
+    for doc_id, _ in fused_rankings:
+        if doc_id in chunk_map:
+            unique_chunks.append(chunk_map[doc_id])
+    
+    # Return top 3 chunks
     return unique_chunks[:3]
 
 async def run_llm(query: str, context: List) -> str:
