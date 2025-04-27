@@ -2,29 +2,19 @@ import asyncio
 from openai import OpenAI
 from dotenv import load_dotenv
 import json
-from embedding_utils import initialize_embeddings
+from llm_utils import initialize_embeddings,call_llm,create_and_index_vector_store
 from langchain_qdrant import QdrantVectorStore
 from typing import List, Dict
 
-# Load environment variables from .env file
-load_dotenv()
-
-# Initialize OpenAI client
-client = OpenAI()
 
 async def generate_similar_queries_with_llm(query: str, num_queries: int = 3) -> List[str]:
     try:
         prompt = f"Generate {num_queries} similar queries to: '{query}'. Return only a JSON object with a 'queries' key containing an array of strings."
         messages = [{"role": "user", "content": prompt}]
-        response = client.chat.completions.create(
-            model="gpt-4o", 
-            messages=messages,
-            response_format={"type": "json_object"}
-        )
-        content = response.choices[0].message.content
+        response = call_llm(messages,json_format=True)
         
         try:
-            data = json.loads(content)
+            data = json.loads(response)
             return data.get('queries', [])
         except json.JSONDecodeError as e:
             print(f"JSON parsing error: {e}")
@@ -70,11 +60,8 @@ async def run_llm(query: str, context: List) -> str:
             {"role": "user", "content": f"Question: {query}\nContext: {context_text}"}
         ]
         
-        response = client.chat.completions.create(
-            model="gpt-4o", 
-            messages=messages
-        )
-        return response.choices[0].message.content
+        response = call_llm(messages)
+        return response
     except Exception as e:
         print(f"LLM error: {e}")
         return "Sorry, I encountered an error while processing your query."
